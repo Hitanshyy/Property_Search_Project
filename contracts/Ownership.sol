@@ -1,66 +1,76 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-// OpenZeppelin upgradeable libraries
 import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import { PropertySearchStorage } from "./Storage.sol";
+import { IPropertyRegistry } from "./IOwnership.sol";
 
-// Interface to interact with PropertyRegistry
-interface IPropertyRegistry {
-    function ownerOf(uint256 tokenId) external view returns (address);
-    function safeTransferFrom(address from, address to, uint256 tokenId) external;
-}
-
-/// @title Ownership Contract
-/// @notice Handles transfer of property ownership and keeps immutable records
-contract Ownership is Initializable, AccessControlUpgradeable {
-    // Roles
+/**
+ * @title Ownership Contract
+ * @notice Handles property ownership transfers and maintains ownership history
+*/
+contract Ownership is Initializable, AccessControlUpgradeable, PropertySearchStorage {
+    // Role identifiers
     bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
     bytes32 public constant AGENT_ROLE = keccak256("AGENT_ROLE");
 
-    // Reference to PropertyRegistry
-    IPropertyRegistry public registry;
+    /**
+     * @dev Event emitted when Ownership is transferred.
+     * @param propertyId ID of the property NFT
+     * @param from is the from address.
+     * @param to is the to address.
+    */
+    event OwnershipTransferred(
+        uint256 indexed propertyId, 
+        address indexed from, 
+        address indexed to
+    );
 
-    // Ownership history: propertyId => list of previous owners
-    mapping(uint256 => address[]) private ownershipHistory;
-
-    // Events
-    event OwnershipTransferred(uint256 indexed propertyId, address indexed from, address indexed to);
-
-    /// @notice Initialize contract with PropertyRegistry address and admin
+    /**
+     * @notice Initializes the contract with registry address and admin
+     * @param registryAddress Address of the PropertyRegistry contract
+     * @param admin Address of the admin
+    */
     function initialize(address registryAddress, address admin) public initializer {
+        require(registryAddress != address(0), "Invalid registry address");
+        require(admin != address(0), "Invalid admin address");
+
         __AccessControl_init();
 
-        require(registryAddress != address(0), "Invalid registry address");
-
-        registry = IPropertyRegistry(registryAddress);
+        registry_ = IPropertyRegistry(registryAddress);
 
         _grantRole(DEFAULT_ADMIN_ROLE, admin);
         _grantRole(ADMIN_ROLE, admin);
     }
 
-    /// @notice Transfer property ownership
-    /// @param propertyId ID of the property NFT
-    /// @param newOwner Address of the new owner
+    /** 
+     * @notice Transfers ownership of a property NFT
+     * @dev Only an address with AGENT_ROLE can call this function
+     * @param propertyId ID of the property NFT
+     * @param newOwner Address of the new owner
+    */
     function transferOwnership(uint256 propertyId, address newOwner) external onlyRole(AGENT_ROLE) {
         require(newOwner != address(0), "Invalid new owner");
 
-        address currentOwner = registry.ownerOf(propertyId);
+        address currentOwner = registry_.ownerOf(propertyId);
         require(currentOwner != newOwner, "Already the owner");
 
         // Record current owner in history
-        ownershipHistory[propertyId].push(currentOwner);
+        ownershipHistory_[propertyId].push(currentOwner);
 
-        // Transfer NFT in PropertyRegistry
-        registry.safeTransferFrom(currentOwner, newOwner, propertyId);
+        // Transfer NFT via PropertyRegistry contract
+        registry_.safeTransferFrom(currentOwner, newOwner, propertyId);
 
         emit OwnershipTransferred(propertyId, currentOwner, newOwner);
     }
 
-    /// @notice Get full ownership history of a property
-    /// @param propertyId ID of the property NFT
-    /// @return Array of previous owners
+    /** 
+     * @notice Returns the ownership history of a property
+     * @param propertyId ID of the property NFT
+     * @return Array of previous owners
+    */
     function getOwnershipHistory(uint256 propertyId) external view returns (address[] memory) {
-        return ownershipHistory[propertyId];
+        return ownershipHistory_[propertyId];
     }
 }
