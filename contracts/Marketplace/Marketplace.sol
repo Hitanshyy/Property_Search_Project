@@ -3,14 +3,14 @@ pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import { PropertySearchStorage } from "./Storage.sol";
-import { IPropertyRegistry } from "./IOwnership.sol";
+import { MarketPlaceStorage } from "./Storage.sol";
+import { IPropertyRegistry } from "../IOwnership.sol";
 
 /**
  * @title Marketplace Contract
  * @notice Enables property owners to list and sell property NFTs.
  */
-contract Marketplace is Initializable, AccessControlUpgradeable, PropertySearchStorage {
+contract Marketplace is Initializable, AccessControlUpgradeable, MarketPlaceStorage {
     bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
     bytes32 public constant AGENT_ROLE = keccak256("AGENT_ROLE");
 
