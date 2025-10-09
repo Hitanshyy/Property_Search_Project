@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 import { IPropertyRegistry } from "../IPropertyRegistry.sol";
+import { Ownership } from "../Ownership/Ownership.sol";
 
 /**
  * @title Property Search Storage Contract
@@ -71,5 +72,7 @@ contract MarketPlaceStorage {
 
     // Reference to PropertyRegistry
     IPropertyRegistry public registry_;
+
+    Ownership internal ownership_;
 
 }
