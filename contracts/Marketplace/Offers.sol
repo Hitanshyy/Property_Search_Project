@@ -1,15 +1,17 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
+
 import { MarketPlaceStorage } from "./Storage.sol";
-import { IPropertyRegistry } from "../IOwnership.sol";
+import { IPropertyRegistry } from "../IPropertyRegistry.sol";
 
 /**
  * @title Offers Contract
  * @notice Allows buyers to make and manage offers for properties.
  */
-contract Offers is Initializable, MarketPlaceStorage {
+contract Offers is Initializable, MarketPlaceStorage, ReentrancyGuardUpgradeable {
 
     event OfferMade(
         uint256 indexed propertyId, 
@@ -30,6 +32,7 @@ contract Offers is Initializable, MarketPlaceStorage {
     );
 
     function initialize(address registryAddress) public initializer {
+        __ReentrancyGuard_init();
         require(registryAddress != address(0), "Invalid registry");
         registry_ = IPropertyRegistry(registryAddress);
     }
@@ -46,18 +49,21 @@ contract Offers is Initializable, MarketPlaceStorage {
         emit OfferMade(propertyId, msg.sender, msg.value);
     }
 
-    function cancelOffer(uint256 propertyId, uint256 index) external {
+    function cancelOffer(uint256 propertyId, uint256 index) external nonReentrant {
         Offer storage offer = offers[propertyId][index];
         require(offer.buyer == msg.sender, "Not your offer");
         require(offer.active, "Already inactive");
 
         offer.active = false;
-        payable(msg.sender).transfer(offer.amount);
+
+        // Refund buyer safely
+        (bool success, ) = payable(msg.sender).call{value: offer.amount}("");
+        require(success, "Refund failed");
 
         emit OfferCancelled(propertyId, msg.sender);
     }
 
-    function acceptOffer(uint256 propertyId, uint256 index) external {
+    function acceptOffer(uint256 propertyId, uint256 index) external nonReentrant {
         address owner = registry_.ownerOf(propertyId);
         require(owner == msg.sender, "Not property owner");
 
@@ -65,8 +71,11 @@ contract Offers is Initializable, MarketPlaceStorage {
         require(offer.active, "Offer not active");
 
         offer.active = false;
-        payable(msg.sender).transfer(offer.amount);
+
         registry_.safeTransferFrom(msg.sender, offer.buyer, propertyId);
+
+        (bool success, ) = payable(msg.sender).call{value: offer.amount}("");
+        require(success, "Payment failed");
 
         emit OfferAccepted(propertyId, msg.sender, offer.buyer, offer.amount);
     }

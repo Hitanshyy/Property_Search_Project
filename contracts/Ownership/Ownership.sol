@@ -3,14 +3,14 @@ pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import { PropertySearchStorage } from "./Storage.sol";
-import { IPropertyRegistry } from "./IOwnership.sol";
+import { OwnershipStorage } from "./Storage.sol";
+import { IPropertyRegistry } from "../IPropertyRegistry.sol";
 
 /**
  * @title Ownership Contract
  * @notice Handles property ownership transfers and maintains ownership history
 */
-contract Ownership is Initializable, AccessControlUpgradeable, PropertySearchStorage {
+contract Ownership is Initializable, AccessControlUpgradeable, OwnershipStorage {
     // Role identifiers
     bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
     bytes32 public constant AGENT_ROLE = keccak256("AGENT_ROLE");
