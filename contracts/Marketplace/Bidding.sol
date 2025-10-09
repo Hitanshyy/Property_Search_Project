@@ -81,8 +81,6 @@ contract Bidding is Initializable, ReentrancyGuardUpgradeable, MarketPlaceStorag
 
             ownership_.transferOwnership(propertyId, auction.highestBidder);
 
-            registry_.safeTransferFrom(auction.seller, auction.highestBidder, propertyId);
-
             emit AuctionEnded(propertyId, auction.highestBidder, auction.highestBid);
         } else {
             emit AuctionEnded(propertyId, address(0), 0);

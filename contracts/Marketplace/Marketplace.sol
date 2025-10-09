@@ -86,8 +86,6 @@ contract Marketplace is Initializable, AccessControlUpgradeable, ReentrancyGuard
         (bool success, ) = payable(listing.seller).call{value: msg.value}("");
         require(success, "Payment failed");
 
-        registry_.safeTransferFrom(listing.seller, msg.sender, propertyId);
-
         emit PropertyPurchased(listing.listingId, propertyId, msg.sender, listing.price);
     }
 

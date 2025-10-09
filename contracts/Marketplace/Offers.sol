@@ -72,8 +72,6 @@ contract Offers is Initializable, ReentrancyGuardUpgradeable, MarketPlaceStorage
 
         ownership_.transferOwnership(propertyId, offer.buyer);
 
-        registry_.safeTransferFrom(msg.sender, offer.buyer, propertyId);
-
         (bool success, ) = payable(msg.sender).call{value: offer.amount}("");
         require(success, "Payment failed");
 
